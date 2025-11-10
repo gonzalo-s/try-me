@@ -1,0 +1,54 @@
+[
+  {
+    "slug": "shirt-oxford-blue",
+    "title": "Oxford Shirt Blue",
+    "category": "shirt",
+    "images": [
+      "https://static.zara.net/assets/public/d457/fb13/8f0447ca860a/3f60fb903937/07372309401-e1/07372309401-e1.jpg?ts=1753867150662&w=750",
+      "https://static.zara.net/assets/public/d805/4cb4/b9394536a3f0/1e58acfe6251/07372309401-e2/07372309401-e2.jpg?ts=1753867150765&w=750"
+    ]
+  },
+  {
+    "slug": "pants-chino-khaki",
+    "title": "Chino Pants Khaki",
+    "category": "pants",
+    "images": [
+      "https://static.zara.net/assets/public/3c33/4ea9/c76640708a8e/31825d938a4a/06786405505-000-e1/06786405505-000-e1.jpg?ts=1756467716745&w=563",
+      "https://static.zara.net/assets/public/3f92/fc06/a6264d14b23b/0b3f86651fba/06786405505-000-e2/06786405505-000-e2.jpg?ts=1756467716301&w=563"
+    ]
+  },
+  {
+    "slug": "jacket-bomber-black",
+    "title": "Bomber Jacket Black",
+    "category": "jacket",
+    "images": [
+      "https://static.zara.net/assets/public/e054/b65d/a7e441a095bd/79ced865da6f/06476058049-e1/06476058049-e1.jpg?ts=1756378856715&w=563",
+      "https://static.zara.net/assets/public/b0e1/4819/1c5046b7afb0/9bc9add1633e/06476058049-e2/06476058049-e2.jpg?ts=1756378856512&w=563"
+    ]
+  },
+  {
+    "slug": "hat-cap-navy",
+    "title": "Classic Cap Navy",
+    "category": "hat",
+    "images": [
+      "https://static.zara.net/assets/public/1d61/cf80/837a492d861b/068fe7e1261a/03920659420-000-e1/03920659420-000-e1.jpg?ts=1756820881611&w=750"
+    ]
+  },
+  {
+    "slug": "watch-steel",
+    "title": "Steel Watch",
+    "category": "watch",
+    "images": [
+      "https://www.tagheuer.com/on/demandware.static/-/Sites-tagheuer-master/default/dwcc2c2318/TAG_Heuer_Formula_1/CBZ2085.FT8093/CBZ2085.FT8093_0913.png?impolicy=resize&width=1920"
+    ]
+  },
+  {
+    "slug": "shoes-sneaker-white",
+    "title": "White Sneaker",
+    "category": "shoes",
+    "images": [
+      "https://static.zara.net/assets/public/a0d2/e2b1/ab5246ba99e6/5e8fc7eb6390/12422520032-e1/12422520032-e1.jpg?ts=1729247499736&w=563",
+      "https://static.zara.net/assets/public/1209/bf12/b8004bf3a1a2/f44996432cb6/12422520032-e2/12422520032-e2.jpg?ts=1729247499370&w=563"
+    ]
+  }
+]
