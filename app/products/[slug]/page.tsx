@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getProduct } from "@/lib/products";
-// import TryMePanel from "@/components/TryMePanel";
+import TryMePanel from "@/components/TryMePanel";
 
 export default async function PDP({
   params,
@@ -37,7 +37,7 @@ export default async function PDP({
             Category: {product.category}
           </p>
 
-          {/* <TryMePanel product={product} /> */}
+          <TryMePanel product={product} />
         </div>
       </div>
     </main>
