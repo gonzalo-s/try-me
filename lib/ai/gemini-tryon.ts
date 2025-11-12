@@ -11,13 +11,13 @@ type Measures = {
 };
 
 export async function tryOnWithGeminiFiles(input: {
-  userImage: Uint8Array;
-  productImage: Uint8Array;
+  userImage: Uint8Array; // PNG or JPEG bytes
+  productImage: Uint8Array; // PNG or JPEG bytes
   measures?: Measures;
   prompt?: string;
 }) {
   const m = input.measures ?? {};
-  const measureText =
+  const measuresLine =
     `User measurements: height ${m.heightCm ?? "?"} cm, chest ${
       m.chestCm ?? "?"
     } cm, ` +
@@ -25,81 +25,94 @@ export async function tryOnWithGeminiFiles(input: {
       m.footSize ?? "?"
     }.`;
 
-  const instruction = [
-    "Edit the person photo so they are wearing the provided product image. Product image might be a piece of clothing, accessories or footwear.",
-    "Keep identity and background intact. Realistic lighting. Natural fit. No extra accessories.",
-    "show full body if possible.",
-    "keep product details visible.",
-    "keep product colors accurate.",
-    "keep product proportions as in the input.",
+  // System rules to preserve the product exactly
+  const system = [
+    "You are a photo editor that composes a realistic try-on image from a user photo and a product photo.",
+    "Rules:",
+    "1) Maintain the product exactly as provided. Do not change proportions, silhouette, logo placement, textures, or colors.",
+    "2) Fit the product naturally to the user without stretching or warping the product.",
+    "3) Preserve the user identity and the original background. Use realistic lighting and shadows consistent with the user photo.",
+    "4) Do not add accessories, text, or additional elements.",
+    "5) If uncertain, favor minimal changes over hallucination.",
   ].join(" ");
 
-  const extra = input.prompt?.trim() ? ` ${input.prompt?.trim()}` : "";
-  const fullPrompt = `${instruction} ${measureText}${extra}`;
+  const instruction = [
+    "Task: make the person in USER_PHOTO wear the item in PRODUCT_PHOTO.",
+    "Show full body if possible. Keep product details visible, colors accurate, and proportions unchanged.",
+    measuresLine,
+    input.prompt?.trim() ? `Extra notes: ${input.prompt.trim()}` : "",
+  ].join(" ");
 
-  // Must be an image capable Gemini model
   const modelName =
     process.env.GOOGLE_GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
   const model = google(modelName);
 
   const result = await generateText({
     model,
-    // The guide shows this is not strictly required, but it is explicit
-    providerOptions: { google: { responseModalities: ["IMAGE"] } },
+    system,
+    providerOptions: {
+      google: {
+        responseModalities: ["IMAGE"], // request an image back
+        // imageConfig: { aspectRatio: "1:1" }, // optional
+      },
+    },
     maxRetries: 0,
     messages: [
       {
         role: "user",
         content: [
-          { type: "text", text: fullPrompt },
-          // Per docs: use type: "image" and the "image" field for bytes or URL
-          { type: "image", image: input.userImage, mediaType: "image/png" },
-          { type: "image", image: input.productImage, mediaType: "image/png" },
+          // Tag files with adjacent text markers so the model knows which is which
+          { type: "text", text: instruction },
+
+          { type: "text", text: "USER_PHOTO:" },
+          { type: "file", data: input.userImage, mediaType: "image/png" },
+
+          { type: "text", text: "PRODUCT_PHOTO:" },
+          { type: "file", data: input.productImage, mediaType: "image/png" },
         ],
       },
     ],
   });
 
-  // Primary path per docs: images come in result.files
+  // Expected location for image output
   let file = result.files?.find(
     (f) => typeof f.mediaType === "string" && f.mediaType.startsWith("image/")
   );
 
-  // Fallback: some SDK builds include image parts on step content
+  // Fallback for SDK builds that place files inside step content
   if (!file && Array.isArray(result.steps)) {
     for (const step of result.steps) {
       const parts = (step as any).content as Array<any> | undefined;
-      const imgPart = parts?.find(
+      const img = parts?.find(
         (p) =>
-          p?.type === "image" &&
+          (p?.type === "file" || p?.type === "image") &&
           typeof p?.mediaType === "string" &&
           p.mediaType.startsWith("image/") &&
-          p?.data
+          (p?.data || p?.uint8Array)
       );
-      if (imgPart) {
-        file = imgPart;
+      if (img) {
+        file = img;
         break;
       }
     }
   }
 
   if (!file) {
-    // Log a detailed WHY to your server console
-    const firstStep = (result as any)?.steps?.[0];
+    const first = (result as any)?.steps?.[0];
     console.error("[gemini try-on] No image in response", {
       modelName,
-      finishReason: firstStep?.finishReason,
-      warnings: firstStep?.warnings,
-      providerMetadata: firstStep?.providerMetadata, // often contains safety or rate info
+      finishReason: first?.finishReason,
+      warnings: first?.warnings,
+      providerMetadata: first?.providerMetadata,
       filesCount: result.files?.length ?? 0,
       hasSteps: Array.isArray(result.steps),
       stepContentTypes: Array.isArray(result.steps)
-        ? (firstStep?.content || []).map((p: any) => p?.type || typeof p)
+        ? (first?.content || []).map((p: any) => p?.type || typeof p)
         : [],
-      hint: "Use an image capable model like gemini-2.5-flash-image. Check quota and safety blocks. Make sure inputs use type: 'image' and small PNG or JPEG.",
+      hint: "Use an image-capable model, include responseModalities: ['IMAGE'], and ensure inputs are small PNG or JPEG. Also check quota and safety.",
     });
     throw new Error(
-      `Gemini returned no image. Model "${modelName}". Check quota, safety filters, or invalid inputs. See server logs for details.`
+      `Gemini returned no image. Model "${modelName}". See server logs for details.`
     );
   }
 
@@ -114,6 +127,5 @@ export async function tryOnWithGeminiFiles(input: {
   }
 
   const mime = (file as any).mediaType || "image/png";
-  const base64 = Buffer.from(data).toString("base64");
-  return `data:${mime};base64,${base64}`;
+  return `data:${mime};base64,${Buffer.from(data).toString("base64")}`;
 }

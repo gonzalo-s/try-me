@@ -19,9 +19,9 @@ export type TryOnResult = {
 };
 
 export enum Provider {
-  Sharp = "sharp",
-  Stability = "stability",
-  Replicate = "replicate",
+  Sharp = "sharp", // Fallback just for testing
+  Stability = "stability", // NO image to image option on its models
+  Replicate = "replicate", // NO image to image option on its models
   Gemini = "gemini",
 }
 
