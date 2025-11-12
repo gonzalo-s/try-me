@@ -10,9 +10,12 @@ type Measures = {
   footSize?: string;
 };
 
+type AllowedAspect = "1:1" | "3:4" | "9:16";
+
 export async function tryOnWithGeminiFiles(input: {
   userImage: Uint8Array; // PNG or JPEG bytes
   productImage: Uint8Array; // PNG or JPEG bytes
+  userImageAspect: AllowedAspect; // computed on client, validated by Zod
   measures?: Measures;
   prompt?: string;
 }) {
@@ -25,7 +28,6 @@ export async function tryOnWithGeminiFiles(input: {
       m.footSize ?? "?"
     }.`;
 
-  // System rules to preserve the product exactly
   const system = [
     "You are a photo editor that composes a realistic try-on image from a user photo and a product photo.",
     "Rules:",
@@ -34,11 +36,12 @@ export async function tryOnWithGeminiFiles(input: {
     "3) Preserve the user identity and the original background. Use realistic lighting and shadows consistent with the user photo.",
     "4) Do not add accessories, text, or additional elements.",
     "5) If uncertain, favor minimal changes over hallucination.",
+    "6) NEVER truncate or crop the product or the user.",
   ].join(" ");
 
   const instruction = [
     "Task: make the person in USER_PHOTO wear the item in PRODUCT_PHOTO.",
-    "Show full body if possible. Keep product details visible, colors accurate, and proportions unchanged.",
+    "Show full body if USER_PHOTO has full body. Keep product details visible, colors accurate, and proportions unchanged.",
     measuresLine,
     input.prompt?.trim() ? `Extra notes: ${input.prompt.trim()}` : "",
   ].join(" ");
@@ -52,8 +55,8 @@ export async function tryOnWithGeminiFiles(input: {
     system,
     providerOptions: {
       google: {
-        responseModalities: ["IMAGE"], // request an image back
-        // imageConfig: { aspectRatio: "1:1" }, // optional
+        responseModalities: ["IMAGE"],
+        imageConfig: { aspectRatio: input.userImageAspect }, // use client aspect directly
       },
     },
     maxRetries: 0,
@@ -61,7 +64,6 @@ export async function tryOnWithGeminiFiles(input: {
       {
         role: "user",
         content: [
-          // Tag files with adjacent text markers so the model knows which is which
           { type: "text", text: instruction },
 
           { type: "text", text: "USER_PHOTO:" },
@@ -74,12 +76,10 @@ export async function tryOnWithGeminiFiles(input: {
     ],
   });
 
-  // Expected location for image output
   let file = result.files?.find(
     (f) => typeof f.mediaType === "string" && f.mediaType.startsWith("image/")
   );
 
-  // Fallback for SDK builds that place files inside step content
   if (!file && Array.isArray(result.steps)) {
     for (const step of result.steps) {
       const parts = (step as any).content as Array<any> | undefined;
@@ -101,15 +101,12 @@ export async function tryOnWithGeminiFiles(input: {
     const first = (result as any)?.steps?.[0];
     console.error("[gemini try-on] No image in response", {
       modelName,
+      aspectRequested: input.userImageAspect,
       finishReason: first?.finishReason,
       warnings: first?.warnings,
       providerMetadata: first?.providerMetadata,
       filesCount: result.files?.length ?? 0,
-      hasSteps: Array.isArray(result.steps),
-      stepContentTypes: Array.isArray(result.steps)
-        ? (first?.content || []).map((p: any) => p?.type || typeof p)
-        : [],
-      hint: "Use an image-capable model, include responseModalities: ['IMAGE'], and ensure inputs are small PNG or JPEG. Also check quota and safety.",
+      hint: "Use an image-capable model, include responseModalities ['IMAGE'], ensure inputs are small PNG or JPEG, and check quota or safety.",
     });
     throw new Error(
       `Gemini returned no image. Model "${modelName}". See server logs for details.`

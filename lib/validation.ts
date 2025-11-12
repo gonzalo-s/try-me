@@ -8,11 +8,15 @@ export const measuresSchema = z.object({
   footSize: z.string().max(8).optional(),
 });
 
+// only square or vertical
+export const allowedAspects = z.enum(["1:1", "3:4", "9:16"]);
+
 export const tryOnPayloadSchema = z.object({
   productSlug: z.string(),
   productImageUrl: z.string().url(),
   prompt: z.string().max(200).optional(),
-  // user image will come via multipart, not here
-  measures: measuresSchema,
+  userImageAspect: allowedAspects, // required: computed on client
+  measures: measuresSchema.optional(),
 });
+
 export type TryOnPayload = z.infer<typeof tryOnPayloadSchema>;

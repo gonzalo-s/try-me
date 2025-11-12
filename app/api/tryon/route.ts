@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
         productImage: productArray,
         measures: payload.measures,
         prompt: payload.prompt,
+        userImageAspect: payload.userImageAspect,
       });
 
       return NextResponse.json({ imageUrl, provider: "gemini-image" });
