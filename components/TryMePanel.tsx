@@ -51,7 +51,8 @@ export default function TryMePanel({ product }: { product: Product }) {
     watch,
     formState: { isSubmitting, errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(tryOnPayloadSchema),
+    // zodResolver typing can be strict when using preprocess transforms; cast to any
+    resolver: zodResolver(tryOnPayloadSchema) as any,
     defaultValues: {
       productSlug: product.slug,
       productImageUrl: product.images[0],
