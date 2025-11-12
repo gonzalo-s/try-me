@@ -20,13 +20,21 @@ export async function tryOnWithGeminiFiles(input: {
   prompt?: string;
 }) {
   const m = input.measures ?? {};
-  const measuresLine =
-    `User measurements: height ${m.heightCm ?? "?"} cm, chest ${
-      m.chestCm ?? "?"
-    } cm, ` +
-    `waist ${m.waistCm ?? "?"} cm, hips ${m.hipsCm ?? "?"} cm, foot size ${
-      m.footSize ?? "?"
-    }.`;
+
+  const height = m.heightCm ? `height ${m.heightCm} cm` : null;
+  const chest = m.chestCm ? `chest ${m.chestCm} cm` : null;
+  const waist = m.waistCm ? `waist ${m.waistCm} cm` : null;
+  const hips = m.hipsCm ? `hips ${m.hipsCm} cm` : null;
+  const footSize = m.footSize ? `foot size ${m.footSize}` : null;
+
+  const hasMeasures = height || chest || waist || hips || footSize;
+
+  // if hasMeasures is null, then measuresLine will be null"
+  const measuresLine = hasMeasures
+    ? `User measurements: ${[height, chest, waist, hips, footSize]
+        .filter(Boolean)
+        .join(", ")}.`
+    : null;
 
   const system = [
     "You are a photo editor that composes a realistic try-on image from a user photo and a product photo.",

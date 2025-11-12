@@ -300,6 +300,7 @@ export default function TryMePanel({ product }: { product: Product }) {
           aria-describedby={
             errors?.userImageFile ? "userImage-error" : undefined
           }
+          className="hover:cursor-pointer"
         />
         {errors?.userImageFile?.message && (
           <p
@@ -315,13 +316,26 @@ export default function TryMePanel({ product }: { product: Product }) {
       {/* hidden field that we set after analyzing the file */}
       <input type="hidden" {...register("userImageAspect")} />
 
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Generating..." : "Try me"}
-      </Button>
-
+      {/* action area: keep a fixed min width so swapping button <-> loader doesn't cause layout shift */}
+      <div className="inline-block min-w-[8rem]">
+        {!isSubmitting ? (
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-gradient-to-bl from-pink-400 via-purple-500 to-indigo-600 text-white shadow-lg transform transition-transform duration-150 hover:scale-[1.03] hover:shadow-2xl"
+          >
+            TRY ME
+          </Button>
+        ) : (
+          <div className="h-9 flex items-center justify-center">
+            <div className="p-1 animate-spin drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 h-7 w-7 aspect-square rounded-full">
+              <div className="rounded-full h-full w-full bg-slate-100 background-blur-md"></div>
+            </div>
+          </div>
+        )}
+      </div>
       {resultUrl && (
-        <div className="mt-4">
-          <h3 className="font-medium mb-2">Try-me output</h3>
+        <div className="mt-4 border">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={resultUrl}
@@ -337,3 +351,11 @@ export default function TryMePanel({ product }: { product: Product }) {
     </form>
   );
 }
+
+const Loader = () => {
+  return (
+    <div className="p-1 animate-spin drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 h-10 w-10 aspect-square rounded-full">
+      <div className="rounded-full h-full w-full bg-slate-100 background-blur-md"></div>
+    </div>
+  );
+};
