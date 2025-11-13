@@ -11,7 +11,7 @@ export default function PLP() {
         {products.map((p) => (
           <li
             key={p.slug}
-            className="flex justify-center items-center list-none"
+            className="flex justify-center items-center list-none max-w-64"
           >
             <Link
               key={p.slug}

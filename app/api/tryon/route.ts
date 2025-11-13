@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tryOnPayloadSchema } from "@/lib/validation";
-import { tryOnWithGeminiFiles } from "@/lib/ai/gemini-tryon";
+import { ProductData, tryOnWithGeminiFiles } from "@/lib/ai/gemini-tryon";
 import { getProviderFromEnv, Provider } from "@/lib/ai/providers";
-import sharp from "sharp";
 
 export const runtime = "nodejs"; // important if you use Buffer and file bytes
 
@@ -11,60 +10,6 @@ async function fetchPublicImage(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error("Cannot load product image");
   return new Uint8Array(await res.arrayBuffer());
-}
-
-// Simple Sharp-based composer used as a fallback (or as the "sharp" provider).
-async function composeWithSharp(
-  userArray: Uint8Array,
-  productArray: Uint8Array,
-  productSlug: string
-) {
-  const userImg = sharp(userArray).rotate();
-  const meta = await userImg.metadata();
-  const uw = meta.width ?? 800;
-
-  // heuristics for overlay size/position — keep simple and safe for demo
-  let overlayWidth = Math.floor((uw || 800) * 0.35);
-  let top = Math.floor((uw || 800) * 0.18);
-  let left = Math.floor(((uw || 800) - overlayWidth) / 2);
-
-  const lc = productSlug.toLowerCase();
-  if (
-    lc.includes("pant") ||
-    lc.includes("jean") ||
-    lc.includes("trouser") ||
-    lc.includes("chino")
-  ) {
-    top = Math.floor((uw || 800) * 0.4);
-  } else if (
-    lc.includes("shoe") ||
-    lc.includes("sneaker") ||
-    lc.includes("boot")
-  ) {
-    overlayWidth = Math.floor((uw || 800) * 0.22);
-    top = Math.floor((uw || 800) * 0.72);
-    left = Math.floor(((uw || 800) - overlayWidth) / 2);
-  } else if (lc.includes("dress") || lc.includes("skirt")) {
-    top = Math.floor((uw || 800) * 0.2);
-  }
-
-  const productResized = await sharp(productArray)
-    .resize({ width: overlayWidth })
-    .toBuffer();
-
-  const composed = await userImg
-    .composite([
-      {
-        input: productResized,
-        top,
-        left,
-      },
-    ])
-    .png()
-    .toBuffer();
-
-  const b64 = Buffer.from(composed).toString("base64");
-  return `data:image/png;base64,${b64}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -95,18 +40,10 @@ export async function POST(req: NextRequest) {
         measures: payload.measures,
         prompt: payload.prompt,
         userImageAspect: payload.userImageAspect,
+        prductData: payload.productData as ProductData,
       });
 
       return NextResponse.json({ imageUrl, provider: "gemini-image" });
-    }
-
-    if (provider === Provider.Sharp) {
-      const imageUrl = await composeWithSharp(
-        userArray,
-        productArray,
-        payload.productSlug
-      );
-      return NextResponse.json({ imageUrl, provider: "sharp" });
     }
 
     // Other providers not implemented yet — return a 501 so you can test switching.

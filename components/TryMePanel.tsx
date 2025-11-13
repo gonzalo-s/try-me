@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Resolver, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tryOnPayloadSchema } from "@/lib/validation";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ProductData } from "@/lib/ai/gemini-tryon";
 
 type FormValues = z.infer<typeof tryOnPayloadSchema> & {
   userImageFile?: FileList; // keep file in RHF, not in Zod
@@ -52,28 +53,26 @@ export default function TryMePanel({ product }: { product: Product }) {
     formState: { isSubmitting, errors },
   } = useForm<FormValues>({
     // zodResolver typing can be strict when using preprocess transforms; cast to any
-    resolver: zodResolver(tryOnPayloadSchema) as any,
+    resolver: zodResolver(tryOnPayloadSchema) as Resolver<FormValues>,
     defaultValues: {
       productSlug: product.slug,
       productImageUrl: product.images[0],
       prompt: "",
       measures: {},
       // userImageAspect set after file load
-    } as any,
+    } as FormValues,
   });
 
   const fileRegister = register("userImageFile");
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("🚀 ~ onFileChange ~ e:", e, "--", e.target.files?.[0]);
     // keep RHF in sync
     fileRegister.onChange?.(e);
 
     const file = e.target.files?.[0];
-    console.log("🚀 ~ onFileChange ~ file:", file);
 
     if (!file) {
-      setError("userImageFile" as any, {
+      setError("userImageFile", {
         type: "required",
         message: "Please upload a user photo",
       });
@@ -88,9 +87,9 @@ export default function TryMePanel({ product }: { product: Product }) {
       // reject horizontal
       if (width > height) {
         // clear file from RHF and input
-        setValue("userImageFile", undefined as any, { shouldValidate: false });
+        setValue("userImageFile", undefined, { shouldValidate: false });
         e.target.value = "";
-        setError("userImageFile" as any, {
+        setError("userImageFile", {
           type: "validate",
           message: "Image must be vertical or square, not horizontal",
         });
@@ -100,7 +99,7 @@ export default function TryMePanel({ product }: { product: Product }) {
       const aspectLabel = pickAspectLabelFromWH(width, height);
       setValue("userImageAspect", aspectLabel, { shouldValidate: true });
     } catch {
-      setError("userImageFile" as any, {
+      setError("userImageFile", {
         type: "validate",
         message: "Could not read image. Try another file",
       });
@@ -108,7 +107,6 @@ export default function TryMePanel({ product }: { product: Product }) {
   };
 
   async function onSubmit(values: FormValues) {
-    console.log("🚀 ~ onSubmit ~ values:", values);
     setServerError(null);
 
     // read the file from RHF state, not from the DOM
@@ -116,12 +114,19 @@ export default function TryMePanel({ product }: { product: Product }) {
     const file = fileList?.[0];
 
     if (!file) {
-      setError("userImageFile" as any, {
+      setError("userImageFile", {
         type: "required",
         message: "Please upload a user photo",
       });
       return;
     }
+
+    const productData: ProductData = {
+      title: product.title,
+      category: product.category,
+      description: product.description,
+      composition: product.composition,
+    };
 
     const fd = new FormData();
     fd.set(
@@ -132,6 +137,7 @@ export default function TryMePanel({ product }: { product: Product }) {
         prompt: values.prompt,
         measures: values.measures,
         userImageAspect: values.userImageAspect, // required by schema
+        productData,
       })
     );
     fd.set("userImage", file, file.name);
@@ -145,8 +151,12 @@ export default function TryMePanel({ product }: { product: Product }) {
       }
       const data = await res.json();
       setResultUrl(data.imageUrl); // data:image/png;base64,...
-    } catch (err: any) {
-      setServerError(err?.message ?? "Network error");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setServerError(err.message ?? "Network error");
+      } else {
+        setServerError(String(err) || "Network error");
+      }
     }
   }
 
@@ -328,21 +338,22 @@ export default function TryMePanel({ product }: { product: Product }) {
             TRY ME
           </Button>
         ) : (
-          <div className="h-9 flex items-center justify-center">
-            <div className="p-1 animate-spin drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 h-7 w-7 aspect-square rounded-full">
-              <div className="rounded-full h-full w-full bg-slate-100 background-blur-md"></div>
-            </div>
-          </div>
+          <Loader />
         )}
       </div>
       {resultUrl && (
-        <div className="mt-4 border">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={resultUrl}
-            alt="result"
-            className="rounded border h-[500]"
-          />
+        <div className="mt-4">
+          <h3 className="font-medium mb-2">Try-me output</h3>
+          <div className="p-1 drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 rounded-lg inline-block">
+            <div className="rounded-lg bg-white overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resultUrl}
+                alt="result"
+                className="rounded-lg h-[500] block"
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -355,8 +366,10 @@ export default function TryMePanel({ product }: { product: Product }) {
 
 const Loader = () => {
   return (
-    <div className="p-1 animate-spin drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 h-10 w-10 aspect-square rounded-full">
-      <div className="rounded-full h-full w-full bg-slate-100 background-blur-md"></div>
+    <div className="h-9 flex items-center justify-center">
+      <div className="p-1 animate-spin drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 h-7 w-7 aspect-square rounded-full">
+        <div className="rounded-full h-full w-full bg-slate-100 background-blur-md"></div>
+      </div>
     </div>
   );
 };

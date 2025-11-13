@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-// Accept empty inputs: react-hook-form may send `NaN` for empty number fields
-// (when using `valueAsNumber`). We preprocess values to convert empty strings
-// or `NaN` to `undefined` so the optional numeric fields are truly optional.
 const numberOrEmpty = (min?: number, max?: number) =>
   z.preprocess(
     (v) => {
@@ -57,6 +54,14 @@ export const tryOnPayloadSchema = z.object({
   prompt: z.string().max(200).optional(),
   userImageAspect: allowedAspects, // required: computed on client
   measures: measuresSchema.optional(),
+  productData: z
+    .object({
+      title: z.string(),
+      category: z.string(),
+      description: z.string(),
+      composition: z.string(),
+    })
+    .optional(),
 });
 
 export type TryOnPayload = z.infer<typeof tryOnPayloadSchema>;

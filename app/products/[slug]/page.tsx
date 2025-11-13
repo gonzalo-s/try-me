@@ -36,6 +36,8 @@ export default async function PDP({
           <p className="text-sm text-neutral-500 mb-4">
             Category: {product.category}
           </p>
+          <p className="mb-4 font-medium">{product.description}</p>
+          <p className="mb-6">Composition: {product.composition}</p>
 
           <TryMePanel product={product} />
         </div>
