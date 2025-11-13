@@ -1,4 +1,6 @@
 import "./globals.css";
+// styles required by react-inner-image-zoom
+import "react-inner-image-zoom/lib/styles.min.css";
 
 export const metadata = { title: "try-me POC" };
 

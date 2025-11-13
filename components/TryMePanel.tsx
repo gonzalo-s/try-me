@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductData } from "@/lib/ai/gemini-tryon";
+import InnerImageZoom from "react-inner-image-zoom";
 
 type FormValues = z.infer<typeof tryOnPayloadSchema> & {
   userImageFile?: FileList; // keep file in RHF, not in Zod
@@ -346,11 +347,17 @@ export default function TryMePanel({ product }: { product: Product }) {
           <h3 className="font-medium mb-2">Try-me output</h3>
           <div className="p-1 drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 rounded-lg inline-block">
             <div className="rounded-lg bg-white overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {}
+              {/* <img
                 src={resultUrl}
                 alt="result"
                 className="rounded-lg h-[500] block"
+              /> */}
+              <InnerImageZoom
+                src={resultUrl}
+                zoomSrc={resultUrl}
+                zoomType="hover"
+                zoomScale={1.5}
               />
             </div>
           </div>
