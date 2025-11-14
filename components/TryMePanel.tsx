@@ -347,12 +347,6 @@ export default function TryMePanel({ product }: { product: Product }) {
           <h3 className="font-medium mb-2">Try-me output</h3>
           <div className="p-1 drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 rounded-lg inline-block">
             <div className="rounded-lg bg-white overflow-hidden">
-              {}
-              {/* <img
-                src={resultUrl}
-                alt="result"
-                className="rounded-lg h-[500] block"
-              /> */}
               <InnerImageZoom
                 src={resultUrl}
                 zoomSrc={resultUrl}
