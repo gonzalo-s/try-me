@@ -10,7 +10,7 @@ export const products: Product[] = [
       "https://static.zara.net/assets/public/d805/4cb4/b9394536a3f0/1e58acfe6251/07372309401-e2/07372309401-e2.jpg?ts=1753867150765&w=750",
     ],
     description:
-      "Regular fit shirt made of cotton fabric. Buttoned collar and long sleeves with buttoned cuffs. Chest patch pocket. Front button closure.",
+      "Regular fit shirt made of cotton fabric. Buttoned collar and long sleeves with buttoned cuffs. Chest patch pocket. Front button closure. No labels or tags are visible.",
     composition: "OUTER SHELL 100% cotton",
   },
   {
@@ -22,7 +22,7 @@ export const products: Product[] = [
       "https://static.zara.net/assets/public/3f92/fc06/a6264d14b23b/0b3f86651fba/06786405505-000-e2/06786405505-000-e2.jpg?ts=1756467716301&w=563",
     ],
     description:
-      "Skinny fit long pants made of stretchy cotton blend fabric. Front pockets and back welt pockets. Front zip and button closure.",
+      "Skinny fit full-length trousers made of stretchy cotton blend fabric that extend completely to the ankles. Front pockets and back welt pockets. Front zip and button closure. Hemline rests on the shoe, ensuring total leg coverage.",
     composition: "OUTER SHELL 97% cotton 3% elastane",
   },
   {
@@ -35,7 +35,8 @@ export const products: Product[] = [
       "https://static.zara.net/assets/public/b0e1/4819/1c5046b7afb0/9bc9add1633e/06476058049-e2/06476058049-e2.jpg?ts=1756378856512&w=563",
     ],
     description:
-      "Regular fit jacket made of wool blend grey fabric. Contrasting faux fur lapel blue collar. Long sleeves. Welt pockets at the hip. Contrasting ribbed trim. Button-up front closure.",
+      // "Regular fit jacket made of wool blend grey fabric. Contrasting faux fur lapel blue collar. Long sleeves. Welt pockets at the hip. Contrasting ribbed trim. Button-up front closure.",
+      "Regular fit jacket made of dense, micro-scale grey plaid polyester and wool blend fabric. Contrasting shaggy long-pile blue faux fur collar. Long sleeves covering both full arms with tall black ribbed cuffs. Welt pockets at the hip. Wide black ribbed waistband. Button-up front closure.",
     composition:
       "OUTER SHELL 33% acrylic 31% polyester 29% wool 5% polyamide 2% other fibres LINING 80% polyester 20% cotton",
   },
@@ -83,7 +84,7 @@ export const products: Product[] = [
       "https://vulkeyewear.com/img/productos/689ca9ae5b7e6f87e3b525cbb.jpg",
     ],
     description:
-      "Rolling Stone sunglasses feature a bold design with a sleek black frame and dark tinted lenses, perfect for making a statement while protecting your eyes.",
+      "Rolling Stone Glossy black acetate sunglasses in a squared navigator silhouette, defined by a rigid, straight flat-top clean brow bar running the full width. A secondary lower bridge creates a distinct central rectangular cutout (double bridge).The frame front surface is completely clean and unadorned. Features light blue-to-clear gradient lenses and wide temples adorned with a silver crown logo on the sides.",
     composition:
       "Frame: Acetate, Temples: Acetate, Lenses: CR39 | 100% UVA & UVB",
   },
