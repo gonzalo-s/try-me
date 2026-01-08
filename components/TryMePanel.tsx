@@ -291,7 +291,7 @@ export default function TryMePanel({ product }: { product: Product }) {
         <Label htmlFor="prompt">Prompt</Label>
         <Textarea
           id="prompt"
-          placeholder="Tuck my shirt in."
+          placeholder="E.g.: Tuck my shirt in."
           aria-invalid={!!errors?.prompt}
           aria-describedby={errors?.prompt ? "prompt-error" : undefined}
           {...register("prompt")}

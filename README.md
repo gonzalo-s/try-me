@@ -4,6 +4,19 @@ This repository is a desktop-focused proof-of-concept (POC) demonstrating how AI
 
 The app shows a complete minimal flow: collect a user photo, send image+metadata to an AI-backed image composition endpoint, and display the generated result with a small interactive UX (zoom on hover, preview, etc.).
 
+👉 **[View the full Example Gallery (EXAMPLES.md)](EXAMPLES.md)** for a visual showcase of inputs and generations.
+
+## Table of Contents
+
+- [Main idea](#main-idea)
+- [Examples & Testing Resources](#examples--testing-resources)
+- [Stack](#stack-what-this-poc-uses)
+- [Libraries & resources](#libraries--resources)
+- [Special notes on AI in this POC](#special-notes-on-ai-in-this-poc)
+- [AI instructions and system fields](#ai-instructions-and-system-fields-how-this-poc-composes-prompts)
+- [Findings & Notes](#findings--important-ai-notes)
+- [How to run](#how-to-run-dev)
+
 ## Main idea
 
 - Goal: create a POC where the user can upload a front-facing photo and see the product composited onto their image using AI. The app preserves the user's proportions by sending image metadata (width/height/aspect) along with the request.
@@ -113,50 +126,6 @@ The UI collects user measurements (Height, Chest, Waist, Hips, Foot Size) to dem
 
 **Important:** In this specific POC implementation, while these measurements are passed to the AI prompt context, the current generative models primarily rely on visual composition (fitting the garment image onto the user image) rather than strict physics-based sizing simulation. The sizing data is included to show how such data would be collected and passed for future discovery paths or more specialized physics-based try-on models.
 
-## AI instructions and system fields (how this POC composes prompts)
-
-This project adopts an **Advanced Composition** approach (recommended for newer multimodal models like Gemini 3 Pro), moving away from strict system-role constraints in favor of direct, natural language task descriptions with multiple image inputs.
-
-### Advanced Composition Strategy (Gemini 3 Pro)
-
-The current implementation (`lib/ai/gemini-tryon-b.ts`) constructs a single multimodal prompt that:
-
-1.  **Defines the Task:** "Generate a realistic image of the person provided in the first image wearing the garment provided in the second image."
-2.  **Provides Context:** Includes the product title, description, and user measurements (as text).
-3.  **Sets Quality Goals:** Instructions to "ensure the garment fits naturally", "preserve the person's identity", and "maintain lighting conditions".
-4.  **Attaches Inputs:** Sends two image parts directly in the user message:
-    - `USER_PHOTO` (First image)
-    - `PRODUCT_PHOTO` (Second image)
-
-This "show, don't just tell" approach leverages the model's native ability to understand and merge visual contexts without requiring complex "system" role engineering.
-
-### Legacy Prompting (Gemini 2.5 Flash)
-
-The previous implementation (`lib/ai/gemini-tryon.ts`) used a more traditional structure with a distinct "System Message" (defining strict rules like "do not change proportions") and a structured "Instruction" block. This method is still available for older or faster models where explicit constraints may be more necessary.
-
-How the code wires these together
-
-- `app/api/tryon/route.ts` parses the multipart payload and calls only one of the implementation files (currently `lib/ai/gemini-tryon-b.ts`).
-- The chosen implementation builds the prompt string and calls `generateText` with the model-specific configuration.
-- `lib/ai/gemini-tryon-b.ts` uses `pickImageFromPro` to handle the specific response format of the newer models (handling `inlineData` in candidates), whereas the older implementation used `pickImageFromFlash`.
-
-Where to look in the code
-
-- Server route: `app/api/tryon/route.ts`
-- Advanced Composition Implementation: `lib/ai/gemini-tryon-b.ts` (Active)
-- Legacy Implementation: `lib/ai/gemini-tryon.ts` (Reference)
-
-Why this matters
-
-- System messages set non-negotiable constraints and reduce undesirable outputs by instructing the model which transformations are allowed. The instruction gives the model the task and context (measures, any user prompt). Together with the attached images they form the full multimodal request.
-- The current code does not compute explicit x/y placement coordinates. Instead it relies on the system+instruction text and optional measures/aspect metadata to guide the provider's composition.
-
-Where to look in the code
-
-- Server route: `app/api/tryon/route.ts`
-- Gemini flow / prompt assembly: `lib/ai/gemini-tryon.ts`
-- Response handling and binary extraction: `lib/ai/gemini-tryon.ts` (functions `pickFirstImageFile` and `extractBytesAndMime`)
-
 ## Findings & important AI notes
 
 Right now this POC handles every product the same way: it uses the same `system` prompt and the same product-updated `instruction` for each item. Consider exploring edge cases and **tuning the `system` and `instruction` per product category** (or by specific product composition/materials).
@@ -168,6 +137,29 @@ _Note:_ image-to-image multimodal models are still relatively new and can be inc
 - This POC currently uses the Gemini file-based flow (see `lib/ai/gemini-tryon.ts`) to request a composed image when the server is configured for Gemini. The API route then returns a data URI that the client displays.
 - The client computes and sends lightweight image metadata (natural width, height, aspect) with the multipart request so the server/provider can preserve proportions.
 - The request/response is synchronous in the sense that the client waits for the provider response and displays a loader; the API route is intentionally simple and returns HTTP 501 for providers other than Gemini to make switching explicit during testing.
+
+## Examples & Testing Resources
+
+For your convenience, this repository includes a set of example resources in the `examples/` folder.
+
+- **`examples/inputs/`**: Contains testing images (e.g., front-facing user photos) that developers can use to test the "Try Me" flow immediately without needing to search for personal photos.
+- **`examples/results/`**: Contains sample output images showcasing the capabilities of the current AI configuration.
+
+👉 **[View the full Example Gallery (EXAMPLES.md)](EXAMPLES.md)** for a visual showcase of inputs and generations.
+
+### Sample Results (GitHub Showcase)
+
+You can view example results directly here on GitHub by populating the `examples/results/` folder.
+
+<!--
+  Developers: Upload your result images to examples/results/ and uncomment the lines below.
+  GitHub renders these relative paths automatically in the readme view.
+-->
+
+<!--
+![Jacket Try-On Result](examples/results/jacket_example.png)
+![Hat Try-On Result](examples/results/hat_example.png)
+-->
 
 ## How to run (dev)
 
