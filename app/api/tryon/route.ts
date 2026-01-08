@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tryOnPayloadSchema } from "@/lib/validation";
-import { ProductData, tryOnWithGeminiFiles } from "@/lib/ai/gemini-tryon";
+import { ProductData } from "@/lib/ai/gemini-tryon";
 import { getProviderFromEnv, Provider } from "@/lib/ai/providers";
+import { tryOnWithGeminiFilesb } from "@/lib/ai/gemini-tryon-b";
 
 export const runtime = "nodejs"; // important if you use Buffer and file bytes
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     // dispatch to provider implementations
     if (provider === Provider.Gemini) {
       // Use the Gemini file-based flow (already returns a data: URI)
-      const imageUrl = await tryOnWithGeminiFiles({
+      const imageUrl = await tryOnWithGeminiFilesb({
         userImage: userArray,
         productImage: productArray,
         measures: payload.measures,
