@@ -2,7 +2,7 @@
 
 This repository is a desktop-focused proof-of-concept (POC) demonstrating how AI can be used to let a user "try on" a product (for example a hat, sunglasses, or clothing) on a photo they provide.
 
-The app shows a complete minimal flow: collect a user photo and size measurements, send image+metadata to an AI-backed image composition endpoint, and display the generated result with a small interactive UX (zoom on hover, preview, etc.).
+The app shows a complete minimal flow: collect a user photo, send image+metadata to an AI-backed image composition endpoint, and display the generated result with a small interactive UX (zoom on hover, preview, etc.).
 
 ## Main idea
 
@@ -13,35 +13,37 @@ The app shows a complete minimal flow: collect a user photo and size measurement
 
 1. User lands on a product page and clicks "Try me".
 2. User uploads a front-facing photo (the UI explains orientation/crop requirements).
-3. The UI computes image metadata (natural width/height, aspect ratio) and accepts user measurements (height, chest, waist, foot size).
-4. User provides a short prompt to guide placement (e.g., "place the cap on my head").
-5. On submit the app sends a multipart/form-data request containing the user image and a JSON part with product and user metadata.
-6. The API route calls the configured AI provider to generate a composited image and returns it to the client.
-7. The client displays the result with a polished UI: animated loader, consistent layout, and an interactive zoom-on-hover preview for inspection.
+3. **The UI immediately displays a preview of the uploaded photo.**
+4. The UI computes image metadata (natural width/height, aspect ratio).
+5. User provides a short prompt to guide placement (e.g., "place the cap on my head").
+6. On submit the app sends a multipart/form-data request containing the user image and a JSON part with product and user metadata.
+7. The API route calls the configured AI provider to generate a composited image and returns it to the client.
+8. The client **replaces the preview with the generated result** using a polished UI: animated loader, consistent layout, and an interactive zoom-on-hover preview.
 
 ### Behind the scenes — step-by-step mapping (UI → client → server → AI)
 
 -1. UI (browser)
 
 - User selects a product and activates the "Try me" action. In this POC the try-on UI (`TryMePanel`) is embedded inline on the product page (see `app/products/[slug]/page.tsx`) and toggled in-place.
-- User picks or drops an image file. The client immediately reads the file and computes lightweight metadata (natural width, natural height, aspect ratio). The panel validates orientation and stores the aspect in a hidden field.
-- Form data is validated client-side (required fields, image orientation check, numeric ranges for measures).
+- User picks or drops an image file. The client immediately reads the file and computes lightweight metadata.
+- **Immediate Feedback:** Structurally, the `TryMePanel` creates a local object URL for the uploaded file and displays it immediately in the preview area, improving perceived responsiveness before the server request begins.
+- Form data is validated client-side (required fields, image orientation check).
 
 2. Client serialization & request
 
 - The client constructs a multipart/form-data payload. It contains two parts:
-  - A JSON part (key: "json") with product information, selected variant, user-provided prompt, and computed image metadata and measures.
+  - A JSON part (key: "json") with product information, selected variant, user-provided prompt, and computed image metadata.
   - A binary part (key: "userImageFile") containing the File/Blob the user uploaded.
 - The client sends the request to the app API route (for example: POST /api/tryon).
 
 3. Server API route (Next.js route)
 
-- The route parses the multipart request. It validates the JSON payload server-side (file presence/size/type, numeric ranges when present) and returns structured errors when validation fails.
+- The route parses the multipart request. It validates the JSON payload server-side (file presence/size/type) and returns structured errors when validation fails.
 - The server translates the normalized request into whatever format the chosen AI provider requires (multipart, base64-in-json, or provider-specific SDK call).
 
 4. AI provider call
 
-- The server calls the provider with normalized inputs: the user image (possibly resized), a prompt describing the product and placement, and metadata such as measures and the user's image aspect ratio.
+- The server calls the provider with normalized inputs: the user image (possibly resized), a prompt describing the product and placement, and metadata such as the user's image aspect ratio.
 - The provider returns a composite image (or a link/bytes). Monitor and handle provider errors, timeouts, and moderation flags.
 
 5. Server postprocessing
@@ -79,24 +81,70 @@ Check `package.json` for a full list of packages used in this POC.
 
 ## Special notes on AI in this POC
 
-- This POC includes a Gemini-based implementation: the API route at `POST /api/tryon` parses the multipart payload and, when `TRYME_PROVIDER` (or internal provider selection) is set to `gemini`, dispatches to the Gemini file-based flow implemented in `lib/ai/gemini-tryon.ts`. That flow uses the `@ai-sdk/google` adapter via the `ai` package to request an image response.
-- Manage API keys and secrets via environment variables. Never commit keys to git.
+This POC implements an AI-powered try-on feature using Google's Gemini models.
+
+### Model Selection
+
+The project supports two main Gemini models for image generation, configurable via the `GOOGLE_GEMINI_IMAGE_MODEL` environment variable (defaults to `gemini-3-pro-preview` in the latest code):
+
+- **Gemini 3 Pro Image Preview (`gemini-3-pro-preview` / `gemini-3-pro-image-preview`)**:
+
+  - **Recommended for production.**
+  - Designed for professional asset production and complex instructions.
+  - Features real-world grounding using Google Search and a "Thinking" process for refined composition.
+  - Capable of generating images up to 4K resolution.
+  - Currently implemented via `lib/ai/gemini-tryon-b.ts` using an "Advanced Composition" approach (natural language instructions with multiple image inputs).
+
+- **Gemini 2.5 Flash Image (`gemini-2.5-flash-image`)**:
+  - Designed for speed and efficiency.
+  - Optimized for high-volume, low-latency tasks.
+  - Generates images at 1024px resolution.
+  - Previously used as the default.
+
+### Implementation Details
+
+- The API route at `POST /api/tryon` handles the request.
+- It delegates to `tryOnWithGeminiFiles` (currently imported from `lib/ai/gemini-tryon-b.ts`).
+- The implementation uses the Vercel AI SDK (`ai` package) and the `@ai-sdk/google` provider.
+
+### Note on Sizing Data
+
+The UI collects user measurements (Height, Chest, Waist, Hips, Foot Size) to demonstrate a complete data collection flow.
+
+**Important:** In this specific POC implementation, while these measurements are passed to the AI prompt context, the current generative models primarily rely on visual composition (fitting the garment image onto the user image) rather than strict physics-based sizing simulation. The sizing data is included to show how such data would be collected and passed for future discovery paths or more specialized physics-based try-on models.
 
 ## AI instructions and system fields (how this POC composes prompts)
 
-This project sends two kinds of textual guidance to the AI model: a "system" string and a user-level "instruction" (the code calls it `instruction` and includes it in the user message). They serve different purposes:
+This project adopts an **Advanced Composition** approach (recommended for newer multimodal models like Gemini 3 Pro), moving away from strict system-role constraints in favor of direct, natural language task descriptions with multiple image inputs.
 
-- System message: global rules and constraints for the model. In `lib/ai/gemini-tryon.ts` the `system` variable is a large string that encodes hard rules (for example: "preserve product proportions", "do not add accessories", "preserve user identity/background"). This message is sent as the model's system role and sets the model's behaviour and safety boundaries.
+### Advanced Composition Strategy (Gemini 3 Pro)
 
-- Instruction / user message: the concrete task and context. The `instruction` string (also built in `lib/ai/gemini-tryon.ts`) describes the specific composition task (make the user wear the product, include measures, and any short prompt the user supplied). The user message also carries the two binary attachments (`USER_PHOTO` and `PRODUCT_PHOTO`) as file parts so the model has the inputs it must operate on.
+The current implementation (`lib/ai/gemini-tryon-b.ts`) constructs a single multimodal prompt that:
+
+1.  **Defines the Task:** "Generate a realistic image of the person provided in the first image wearing the garment provided in the second image."
+2.  **Provides Context:** Includes the product title, description, and user measurements (as text).
+3.  **Sets Quality Goals:** Instructions to "ensure the garment fits naturally", "preserve the person's identity", and "maintain lighting conditions".
+4.  **Attaches Inputs:** Sends two image parts directly in the user message:
+    - `USER_PHOTO` (First image)
+    - `PRODUCT_PHOTO` (Second image)
+
+This "show, don't just tell" approach leverages the model's native ability to understand and merge visual contexts without requiring complex "system" role engineering.
+
+### Legacy Prompting (Gemini 2.5 Flash)
+
+The previous implementation (`lib/ai/gemini-tryon.ts`) used a more traditional structure with a distinct "System Message" (defining strict rules like "do not change proportions") and a structured "Instruction" block. This method is still available for older or faster models where explicit constraints may be more necessary.
 
 How the code wires these together
 
-- `app/api/tryon/route.ts` parses the multipart payload, validates it, converts files to byte arrays and fetches the public product image bytes. It then calls `tryOnWithGeminiFiles(...)` (in `lib/ai/gemini-tryon.ts`) passing: `userImage`, `productImage`, `measures`, `prompt`, and `userImageAspect`.
-- `lib/ai/gemini-tryon.ts` builds the `system` and `instruction` strings and calls the `generateText` helper with:
-  - the `system` text as the system role, and
-  - a single user message whose content array contains the `instruction` (text) and two file entries `{ type: "file", data: <Uint8Array>, mediaType: "image/png" }` for the user and product images.
-- The provider-specific `providerOptions` (here `providerOptions.google.imageConfig`) also receives `imageConfig` (aspect ratio) so the model is signaled about the target aspect.
+- `app/api/tryon/route.ts` parses the multipart payload and calls only one of the implementation files (currently `lib/ai/gemini-tryon-b.ts`).
+- The chosen implementation builds the prompt string and calls `generateText` with the model-specific configuration.
+- `lib/ai/gemini-tryon-b.ts` uses `pickImageFromPro` to handle the specific response format of the newer models (handling `inlineData` in candidates), whereas the older implementation used `pickImageFromFlash`.
+
+Where to look in the code
+
+- Server route: `app/api/tryon/route.ts`
+- Advanced Composition Implementation: `lib/ai/gemini-tryon-b.ts` (Active)
+- Legacy Implementation: `lib/ai/gemini-tryon.ts` (Reference)
 
 Why this matters
 

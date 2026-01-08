@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
         measures: payload.measures,
         prompt: payload.prompt,
         userImageAspect: payload.userImageAspect,
-        prductData: payload.productData as ProductData,
+        productData: payload.productData as ProductData,
       });
 
       return NextResponse.json({ imageUrl, provider: "gemini-image" });

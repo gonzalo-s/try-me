@@ -44,6 +44,7 @@ function pickAspectLabelFromWH(
 export default function TryMePanel({ product }: { product: Product }) {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [userPreviewUrl, setUserPreviewUrl] = useState<string | null>(null);
 
   const {
     register,
@@ -99,6 +100,11 @@ export default function TryMePanel({ product }: { product: Product }) {
 
       const aspectLabel = pickAspectLabelFromWH(width, height);
       setValue("userImageAspect", aspectLabel, { shouldValidate: true });
+
+      // Create object URL for immediate feedback
+      setUserPreviewUrl(URL.createObjectURL(file));
+      // Clear previous generated result if any, so user sees the new upload
+      setResultUrl(null);
     } catch {
       setError("userImageFile", {
         type: "validate",
@@ -285,7 +291,7 @@ export default function TryMePanel({ product }: { product: Product }) {
         <Label htmlFor="prompt">Prompt</Label>
         <Textarea
           id="prompt"
-          placeholder="Short instruction, for example place the cap on my head"
+          placeholder="Tuck my shirt in."
           aria-invalid={!!errors?.prompt}
           aria-describedby={errors?.prompt ? "prompt-error" : undefined}
           {...register("prompt")}
@@ -312,7 +318,7 @@ export default function TryMePanel({ product }: { product: Product }) {
           aria-describedby={
             errors?.userImageFile ? "userImage-error" : undefined
           }
-          className="hover:cursor-pointer"
+          className="hover:cursor-pointer hover:file:cursor-pointer"
         />
         {errors?.userImageFile?.message && (
           <p
@@ -342,14 +348,21 @@ export default function TryMePanel({ product }: { product: Product }) {
           <Loader />
         )}
       </div>
-      {resultUrl && (
+
+      {(resultUrl || userPreviewUrl) && (
         <div className="mt-4">
-          <h3 className="font-medium mb-2">Try-me output</h3>
+          <h3 className="font-medium mb-2">
+            {resultUrl ? "Try-me output" : "Preview"}
+          </h3>
           <div className="p-1 drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 rounded-lg inline-block">
-            <div className="rounded-lg bg-white overflow-hidden">
+            <div
+              className={`rounded-lg bg-white overflow-hidden max-w-[500px] transition-all duration-700 ${
+                isSubmitting ? "blur-lg grayscale opacity-60" : ""
+              }`}
+            >
               <InnerImageZoom
-                src={resultUrl}
-                zoomSrc={resultUrl}
+                src={resultUrl || userPreviewUrl || ""}
+                zoomSrc={resultUrl || userPreviewUrl || ""}
                 zoomType="hover"
                 zoomScale={1.5}
               />
@@ -358,7 +371,6 @@ export default function TryMePanel({ product }: { product: Product }) {
         </div>
       )}
 
-      {/* keep these hidden fields */}
       <input type="hidden" {...register("productSlug")} />
       <input type="hidden" {...register("productImageUrl")} />
     </form>
