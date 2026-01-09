@@ -208,11 +208,4 @@ Helpful links & notes
 
 Note: the repo currently targets the Gemini (Google) flow. Switching to other providers requires adding or enabling the corresponding server-side implementation and credentials.
 
-## Next steps / improvements
-
-- Extract a `components/MagnifiedImage.tsx` wrapper to centralize magnifier library usage and fallbacks.
-- Add server-side validation for file size/type and return structured errors from the API route.
-- Add an integration test harness that mocks AI provider responses and verifies the full flow.
-- Add analytics and retries for slow/failed AI calls.
-
 ---
