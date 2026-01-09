@@ -13,7 +13,6 @@ The app shows a complete minimal flow: collect a user photo, send image+metadata
 - [Stack](#stack-what-this-poc-uses)
 - [Libraries & resources](#libraries--resources)
 - [Special notes on AI in this POC](#special-notes-on-ai-in-this-poc)
-- [AI instructions and system fields](#ai-instructions-and-system-fields-how-this-poc-composes-prompts)
 - [Findings & Notes](#findings--important-ai-notes)
 - [How to run](#how-to-run-dev)
 
