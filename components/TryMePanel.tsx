@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ProductData } from "@/lib/ai/gemini-tryon";
 import InnerImageZoom from "react-inner-image-zoom";
+import { ProductData } from "@/lib/ai/gemini-tryon-b";
 
 type FormValues = z.infer<typeof tryOnPayloadSchema> & {
   userImageFile?: FileList; // keep file in RHF, not in Zod
@@ -64,6 +64,7 @@ export default function TryMePanel({ product }: { product: Product }) {
       // userImageAspect set after file load
     } as FormValues,
   });
+  console.log("🚀 ~ TryMePanel ~ formState:", isSubmitting);
 
   const fileRegister = register("userImageFile");
 
@@ -114,6 +115,7 @@ export default function TryMePanel({ product }: { product: Product }) {
   };
 
   async function onSubmit(values: FormValues) {
+    console.log("🚀 ~ onSubmit ~ values:", values);
     setServerError(null);
 
     // read the file from RHF state, not from the DOM
@@ -149,18 +151,43 @@ export default function TryMePanel({ product }: { product: Product }) {
     );
     fd.set("userImage", file, file.name);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     try {
-      const res = await fetch("/api/tryon", { method: "POST", body: fd });
+      const res = await fetch("/api/tryon", {
+        method: "POST",
+        body: fd,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
       if (!res.ok) {
         const text = await res.text().catch(() => "Generation failed");
-        setServerError(text || "Generation failed");
+        let errorMessage = text;
+        try {
+          const json = JSON.parse(text);
+          if (json.error?.message) {
+            errorMessage = json.error.message;
+          } else if (json.message) {
+            errorMessage = json.message;
+          }
+        } catch {
+          // ignore
+        }
+        setServerError(errorMessage || "Generation failed");
         return;
       }
       const data = await res.json();
       setResultUrl(data.imageUrl); // data:image/png;base64,...
     } catch (err: unknown) {
+      clearTimeout(timeoutId);
       if (err instanceof Error) {
-        setServerError(err.message ?? "Network error");
+        if (err.name === "AbortError") {
+          setServerError("Request timed out. Please try again.");
+        } else {
+          setServerError(err.message ?? "Network error");
+        }
       } else {
         setServerError(String(err) || "Network error");
       }
@@ -170,7 +197,7 @@ export default function TryMePanel({ product }: { product: Product }) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="rounded-lg border bg-white p-4 space-y-3"
+      className="rounded-lg border bg-white p-4 space-y-3 text-stone-950 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]"
       aria-labelledby="tryme-heading"
       noValidate
       encType="multipart/form-data"
@@ -178,16 +205,6 @@ export default function TryMePanel({ product }: { product: Product }) {
       <h2 id="tryme-heading" className="font-medium">
         Your data
       </h2>
-
-      {serverError && (
-        <div
-          role="alert"
-          aria-live="assertive"
-          className="rounded bg-red-50 border border-red-200 p-2 text-red-800"
-        >
-          {serverError}
-        </div>
-      )}
 
       <fieldset
         className="grid grid-cols-2 gap-3"
@@ -213,7 +230,7 @@ export default function TryMePanel({ product }: { product: Product }) {
             <p
               id="heightCm-error"
               role="alert"
-              className="text-sm text-red-600 mt-1"
+              className="text-sm text-red-200 font-medium mt-1"
             >
               {String(errors.measures.heightCm.message)}
             </p>
@@ -235,7 +252,7 @@ export default function TryMePanel({ product }: { product: Product }) {
             <p
               id="chestCm-error"
               role="alert"
-              className="text-sm text-red-600 mt-1"
+              className="text-sm text-red-200 font-medium mt-1"
             >
               {String(errors.measures.chestCm.message)}
             </p>
@@ -257,7 +274,7 @@ export default function TryMePanel({ product }: { product: Product }) {
             <p
               id="waistCm-error"
               role="alert"
-              className="text-sm text-red-600 mt-1"
+              className="text-sm text-red-200 font-medium mt-1"
             >
               {String(errors.measures.waistCm.message)}
             </p>
@@ -279,7 +296,7 @@ export default function TryMePanel({ product }: { product: Product }) {
             <p
               id="footSize-error"
               role="alert"
-              className="text-sm text-red-600 mt-1"
+              className="text-sm text-red-200 font-medium mt-1"
             >
               {String(errors.measures.footSize.message)}
             </p>
@@ -300,7 +317,7 @@ export default function TryMePanel({ product }: { product: Product }) {
           <p
             id="prompt-error"
             role="alert"
-            className="text-sm text-red-600 mt-1"
+            className="text-sm text-red-200 font-medium mt-1"
           >
             {String(errors.prompt.message)}
           </p>
@@ -324,7 +341,7 @@ export default function TryMePanel({ product }: { product: Product }) {
           <p
             id="userImage-error"
             role="alert"
-            className="text-sm text-red-600 mt-1"
+            className="text-sm text-red-200 font-medium mt-1"
           >
             {String(errors.userImageFile.message)}
           </p>
@@ -335,29 +352,38 @@ export default function TryMePanel({ product }: { product: Product }) {
       <input type="hidden" {...register("userImageAspect")} />
 
       {/* action area: keep a fixed min width so swapping button <-> loader doesn't cause layout shift */}
-      <div className="inline-block min-w-[8rem]">
-        {!isSubmitting ? (
+      <div className="inline-block min-w-[8rem] w-full">
+        {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-bl from-pink-400 via-purple-500 to-indigo-600 text-white shadow-lg transform transition-transform duration-150 hover:scale-[1.03] hover:shadow-2xl"
+            className="w-full py-6 text-lg font-bold shadow-md hover:shadow-xl transition-all duration-300"
+            size="lg"
           >
-            TRY ME
+            {!isSubmitting ? "TRY ME" : "Generating Image..."}
           </Button>
-        ) : (
-          <Loader />
-        )}
+        }
       </div>
 
+      {serverError && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mt-2 text-sm text-red-600 font-medium text-center"
+        >
+          {serverError}
+        </div>
+      )}
+
       {(resultUrl || userPreviewUrl) && (
-        <div className="mt-4">
-          <h3 className="font-medium mb-2">
+        <div className="mt-6">
+          <h3 className="font-bold text-lg mb-3 text-primary">
             {resultUrl ? "Try-me output" : "Preview"}
           </h3>
-          <div className="p-1 drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 rounded-lg inline-block">
+          <div className="p-1.5 shadow-xl rounded-xl inline-block">
             <div
               className={`rounded-lg bg-white overflow-hidden max-w-[500px] transition-all duration-700 ${
-                isSubmitting ? "blur-lg grayscale opacity-60" : ""
+                isSubmitting ? "blur-md opacity-80" : ""
               }`}
             >
               <InnerImageZoom
@@ -376,13 +402,3 @@ export default function TryMePanel({ product }: { product: Product }) {
     </form>
   );
 }
-
-const Loader = () => {
-  return (
-    <div className="h-9 flex items-center justify-center">
-      <div className="p-1 animate-spin drop-shadow-2xl bg-gradient-to-bl from-pink-400 via-purple-400 to-indigo-600 h-7 w-7 aspect-square rounded-full">
-        <div className="rounded-full h-full w-full bg-slate-100 background-blur-md"></div>
-      </div>
-    </div>
-  );
-};

@@ -50,7 +50,7 @@ export const allowedAspects = z.enum(["1:1", "3:4", "9:16"]);
 
 export const tryOnPayloadSchema = z.object({
   productSlug: z.string(),
-  productImageUrl: z.string().url(),
+  productImageUrl: z.string(),
   prompt: z.string().max(200).optional(),
   userImageAspect: allowedAspects, // required: computed on client
   measures: measuresSchema.optional(),

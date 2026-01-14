@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tryOnPayloadSchema } from "@/lib/validation";
-import { ProductData } from "@/lib/ai/gemini-tryon";
+import { ProductData } from "@/lib/ai/gemini-tryon-b";
 import { getProviderFromEnv, Provider } from "@/lib/ai/providers";
 import { tryOnWithGeminiFilesb } from "@/lib/ai/gemini-tryon-b";
+import fs from "fs/promises";
+import path from "path";
 
 export const runtime = "nodejs"; // important if you use Buffer and file bytes
 
 // small helper: fetch a public image and return bytes or throw
-async function fetchPublicImage(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Cannot load product image");
-  return new Uint8Array(await res.arrayBuffer());
+async function fetchPublicImage(urlOrPath: string) {
+  // If it's a remote URL, fetch it
+  if (urlOrPath.startsWith("http://") || urlOrPath.startsWith("https://")) {
+    const res = await fetch(urlOrPath);
+    if (!res.ok) throw new Error("Cannot load product image");
+    return new Uint8Array(await res.arrayBuffer());
+  }
+
+  // Otherwise treat as a local file in public/
+  // Remove leading slash if present
+  const relativePath = urlOrPath.startsWith("/")
+    ? urlOrPath.slice(1)
+    : urlOrPath;
+  const filePath = path.join(process.cwd(), "public", relativePath);
+  const buffer = await fs.readFile(filePath);
+  return new Uint8Array(buffer);
 }
 
 export async function POST(req: NextRequest) {
@@ -25,11 +39,8 @@ export async function POST(req: NextRequest) {
     const payload = tryOnPayloadSchema.parse(JSON.parse(json));
     const userArray = new Uint8Array(await file.arrayBuffer());
 
-    // Load product bytes from your public path
-    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-    const productUrl = new URL(payload.productImageUrl, base).toString();
-    const productArray = await fetchPublicImage(productUrl);
-
+    // Load product bytes from your public path or remote URL
+    const productArray = await fetchPublicImage(payload.productImageUrl);
     const provider = getProviderFromEnv();
 
     // dispatch to provider implementations
@@ -52,8 +63,21 @@ export async function POST(req: NextRequest) {
       { error: `Provider ${provider} not implemented` },
       { status: 501 }
     );
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (err: any) {
+    console.error("SERVER ERROR:_", err);
+    // If the error object has a structured responseBody (JSON string), try to extract message from it
+    let message = err.message || "Server error";
+    try {
+      if (err.responseBody) {
+        const parsed = JSON.parse(err.responseBody);
+        if (parsed.error?.message) {
+          message = parsed.error.message;
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+
+    return NextResponse.json({ message }, { status: err.statusCode || 500 });
   }
 }

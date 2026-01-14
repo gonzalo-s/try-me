@@ -28,8 +28,9 @@ These images demonstrate the capabilities of the current AI model configuration 
 
 |                                                                              |                                                                                  |
 | :--------------------------------------------------------------------------: | :------------------------------------------------------------------------------: |
-| ![Result](examples/results/2026-01-08_15-14.png) <br> `2026-01-08_15-14.png` |   ![Result](examples/results/2026-01-08_16-16.png) <br> `2026-01-08_16-16.png`   |
-| ![Result](examples/results/2026-01-08_16-09.png) <br> `2026-01-08_16-09.png` | ![Result](examples/results/2026-01-08_16-09_1.png) <br> `2026-01-08_16-09_1.png` |
-| ![Result](examples/results/2026-01-08_16-33.png) <br> `2026-01-08_16-33.png` |   ![Result](examples/results/2026-01-08_16-18.png) <br> `2026-01-08_16-18.png`   |
-| ![Result](examples/results/2026-01-08_16-19.png) <br> `2026-01-08_16-19.png` |   ![Result](examples/results/2026-01-08_16-29.png) <br> `2026-01-08_16-29.png`   |
-| ![Result](examples/results/2026-01-08_16-30.png) <br> `2026-01-08_16-30.png` |   ![Result](examples/results/2026-01-08_16-32.png) <br> `2026-01-08_16-32.png`   |
+| ![Result](examples/results/2026-01-14_11-38.png) <br> `2026-01-14_11-38.png` |   ![Result](examples/results/2026-01-14_11-46.png) <br> `2026-01-14_11-46.png`   |
+| ![Result](examples/results/2026-01-14_11-47.png) <br> `2026-01-14_11-47.png` | ![Result](examples/results/2026-01-14_11-47_1.png) <br> `2026-01-14_11-47_1.png` |
+| ![Result](examples/results/2026-01-14_11-49.png) <br> `2026-01-14_11-49.png` |   ![Result](examples/results/2026-01-14_11-59.png) <br> `2026-01-14_11-59.png`   |
+| ![Result](examples/results/2026-01-14_12-53.png) <br> `2026-01-14_12-53.png` |   ![Result](examples/results/2026-01-14_12-55.png) <br> `2026-01-14_12-55.png`   |
+| ![Result](examples/results/2026-01-14_13-56.png) <br> `2026-01-14_13-56.png` |   ![Result](examples/results/2026-01-14_13-57.png) <br> `2026-01-14_13-57.png`   |
+| ![Result](examples/results/2026-01-14_13-58.png) <br> `2026-01-14_13-58.png` |                                                                                  |

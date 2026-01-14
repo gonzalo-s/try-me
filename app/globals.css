@@ -2,4 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Minimal globals: Tailwind directives only. No theme variables or custom @apply rules. */
+@layer base {
+  :root {
+    --color-background: #1d63ff;
+    --color-foreground: #ffffff;
+
+    --color-muted: #60a5fa;
+    --color-muted-foreground: #e2e8f0;
+
+    --color-popover: #ffffff;
+    --color-popover-foreground: #1d63ff;
+
+    --color-card: #ffffff;
+    --color-card-foreground: #1d63ff;
+
+    --color-border: #60a5fa;
+    --color-input: #93c5fd;
+
+    --color-primary: #ffce32;
+    --color-primary-foreground: #1d63ff;
+
+    --color-secondary: #020817;
+    --color-secondary-foreground: #ffffff;
+
+    --color-accent: #2563eb;
+    --color-accent-foreground: #ffffff;
+
+    --color-destructive: #ef4444;
+    --color-destructive-foreground: #ffffff;
+
+    --color-ring: #ffce32;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --color-background: #020817;
+    --color-foreground: #f8fafc;
+
+    --color-muted: #1e293b;
+    --color-muted-foreground: #94a3b8;
+
+    --color-popover: #020817;
+    --color-popover-foreground: #f8fafc;
+
+    --color-card: #020817;
+    --color-card-foreground: #f8fafc;
+
+    --color-border: #1e293b;
+    --color-input: #1e293b;
+
+    --color-primary: #1d63ff;
+    --color-primary-foreground: #f8fafc;
+
+    --color-secondary: #ffce32;
+    --color-secondary-foreground: #020817;
+
+    --color-accent: #1e293b;
+    --color-accent-foreground: #f8fafc;
+
+    --color-destructive: #7f1d1d;
+    --color-destructive-foreground: #f8fafc;
+
+    --color-ring: #1e293b;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
